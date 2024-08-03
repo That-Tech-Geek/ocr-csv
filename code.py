@@ -2,15 +2,19 @@ import streamlit as st
 import easyocr
 import pandas as pd
 import tempfile
+import numpy as np
 from PIL import Image
 import io
 
 def ocr_image_to_dataframe(image):
+    # Convert PIL Image to NumPy array
+    image_np = np.array(image)
+    
     # Initialize easyocr reader
     reader = easyocr.Reader(['en'])
     
     # Perform OCR on the image
-    results = reader.readtext(image, detail=1)
+    results = reader.readtext(image_np, detail=1)
     
     # Process OCR results into rows
     rows = []
