@@ -16,28 +16,33 @@ def ocr_image_to_dataframe(image):
     # Perform OCR on the image
     results = reader.readtext(image_np, detail=1)
     
-    # Initialize list to store rows
+    # Initialize lists to store rows and columns
     rows = []
     current_row = []
+    last_y = None
     
-    # Process OCR results into rows
     for result in results:
-        # Extract text and bounding box
         text = result[1]
         box = result[0]
         
-        # Assuming the text is split into columns based on its bounding box
-        if len(current_row) > 0 and box[0][1] > current_row[-1][1][1]:
-            # If the text starts on a new row
-            rows.append([text for text, _ in current_row])
-            current_row = []
-        current_row.append((text, box))
+        # Use the vertical position (Y coordinate) of the bounding box to determine rows
+        y = (box[0][1] + box[2][1]) / 2
+        
+        if last_y is None or abs(y - last_y) > 10:
+            # New row detected
+            if current_row:
+                rows.append(current_row)
+            current_row = [text]
+            last_y = y
+        else:
+            # Continue the current row
+            current_row.append(text)
     
     # Append the last row
-    if len(current_row) > 0:
-        rows.append([text for text, _ in current_row])
+    if current_row:
+        rows.append(current_row)
     
-    # Create DataFrame with rows and columns
+    # Create a DataFrame from the rows
     df = pd.DataFrame(rows)
     
     return df
