@@ -2,8 +2,8 @@ import streamlit as st
 import easyocr
 import pandas as pd
 import tempfile
-import numpy as np
 from PIL import Image
+import numpy as np
 import io
 
 def ocr_image_to_dataframe(image):
@@ -16,21 +16,33 @@ def ocr_image_to_dataframe(image):
     # Perform OCR on the image
     results = reader.readtext(image_np, detail=1)
     
-    # Process OCR results into rows
+    # Initialize list to store rows
     rows = []
-    for result in results:
-        # Extract text
-        text = result[1]
-        # Split text into columns based on spaces
-        columns = text.split()
-        rows.append(columns)
+    current_row = []
     
-    # Create a DataFrame with the rows and columns
+    # Process OCR results into rows
+    for result in results:
+        # Extract text and bounding box
+        text = result[1]
+        box = result[0]
+        
+        # Assuming the text is split into columns based on its bounding box
+        if len(current_row) > 0 and box[0][1] > current_row[-1][1][1]:
+            # If the text starts on a new row
+            rows.append([text for text, _ in current_row])
+            current_row = []
+        current_row.append((text, box))
+    
+    # Append the last row
+    if len(current_row) > 0:
+        rows.append([text for text, _ in current_row])
+    
+    # Create DataFrame with rows and columns
     df = pd.DataFrame(rows)
     
     return df
 
-st.title("OCR to DataFrame")
+st.title("Table Image to CSV")
 
 uploaded_image = st.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
 
