@@ -1,7 +1,9 @@
 import streamlit as st
 import easyocr
 import pandas as pd
-from io import StringIO
+import os
+from PIL import Image
+import tempfile
 
 def ocr_image_to_dataframe(image):
     # Initialize easyocr reader
@@ -24,22 +26,32 @@ def ocr_image_to_dataframe(image):
     
     return df
 
-def main():
-    st.title("OCR Image Text Extraction")
-    
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-    
-    if uploaded_file is not None:
-        # Process the uploaded image
-        df = ocr_image_to_dataframe(uploaded_file)
-        
-        # Display DataFrame
-        st.write("Extracted Text:")
-        st.dataframe(df)
-        
-        # Convert DataFrame to CSV format for download
-        csv = df.to_csv(index=False, header=False)
-        st.download_button(label="Download CSV", data=csv, file_name="output.csv", mime="text/csv")
+st.title("OCR to DataFrame")
 
-if __name__ == "__main__":
-    main()
+uploaded_image = st.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
+
+if uploaded_image is not None:
+    # Load image
+    image = Image.open(uploaded_image)
+    
+    # Get DataFrame from OCR
+    df = ocr_image_to_dataframe(image)
+    
+    # Display DataFrame in the app
+    st.write("Data extracted from image:")
+    st.dataframe(df)
+    
+    # Save DataFrame to a temporary CSV file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmpfile:
+        output_csv_path = tmpfile.name
+        df.to_csv(output_csv_path, index=False, header=False)
+        st.write(f"CSV file saved to {output_csv_path}")
+        
+        # Provide a download link for the CSV file
+        with open(output_csv_path, "rb") as file:
+            st.download_button(
+                label="Download CSV",
+                data=file,
+                file_name="output.csv",
+                mime="text/csv"
+            )
