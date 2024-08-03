@@ -5,12 +5,9 @@ import tempfile
 from PIL import Image
 import io
 
-def ocr_image_to_dataframe(image_bytes):
+def ocr_image_to_dataframe(image):
     # Initialize easyocr reader
     reader = easyocr.Reader(['en'])
-    
-    # Open image from bytes
-    image = Image.open(io.BytesIO(image_bytes))
     
     # Perform OCR on the image
     results = reader.readtext(image, detail=1)
@@ -34,11 +31,11 @@ st.title("OCR to DataFrame")
 uploaded_image = st.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
 
 if uploaded_image is not None:
-    # Read the image file as bytes
-    image_bytes = uploaded_image.read()
+    # Open image from uploaded file
+    image = Image.open(uploaded_image)
     
     # Get DataFrame from OCR
-    df = ocr_image_to_dataframe(image_bytes)
+    df = ocr_image_to_dataframe(image)
     
     # Display DataFrame in the app
     st.write("Data extracted from image:")
