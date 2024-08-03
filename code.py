@@ -1,52 +1,45 @@
 import streamlit as st
-from PIL import Image
-import pytesseract
+import easyocr
 import pandas as pd
-import io
+from io import StringIO
 
-# Function to perform OCR on the uploaded image and convert to CSV
-def ocr_image_to_csv(image):
-    # Use pytesseract to do OCR on the image
-    text = pytesseract.image_to_string(image)
+def ocr_image_to_dataframe(image):
+    # Initialize easyocr reader
+    reader = easyocr.Reader(['en'])
     
-    # Split the text into lines
-    lines = text.split('\n')
+    # Perform OCR on the image
+    results = reader.readtext(image, detail=1)
     
-    # Extract rows from the lines
-    rows = [line.split() for line in lines if line.strip()]
+    # Process OCR results into rows
+    rows = []
+    for result in results:
+        # Extract text
+        text = result[1]
+        # Split text into columns based on spaces
+        columns = text.split()
+        rows.append(columns)
     
-    # Create a DataFrame from the rows
+    # Create a DataFrame with the rows and columns
     df = pd.DataFrame(rows)
     
     return df
 
-# Streamlit UI
-st.title('Image to CSV Converter')
-st.write('Upload an image of a table to convert it to a CSV file.')
+def main():
+    st.title("OCR Image Text Extraction")
+    
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        # Process the uploaded image
+        df = ocr_image_to_dataframe(uploaded_file)
+        
+        # Display DataFrame
+        st.write("Extracted Text:")
+        st.dataframe(df)
+        
+        # Convert DataFrame to CSV format for download
+        csv = df.to_csv(index=False, header=False)
+        st.download_button(label="Download CSV", data=csv, file_name="output.csv", mime="text/csv")
 
-# File uploader
-uploaded_file = st.file_uploader("Choose an image...", type=["png", "jpg", "jpeg"])
-
-if uploaded_file is not None:
-    # Open the uploaded image
-    image = Image.open(uploaded_file)
-    
-    # Display the uploaded image
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
-    st.write("")
-    st.write("Processing...")
-    
-    # Convert the image to CSV
-    df = ocr_image_to_csv(image)
-    
-    # Display the DataFrame
-    st.dataframe(df)
-    
-    # Create a CSV download button
-    csv = df.to_csv(index=False)
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name='output.csv',
-        mime='text/csv'
-    )
+if __name__ == "__main__":
+    main()
